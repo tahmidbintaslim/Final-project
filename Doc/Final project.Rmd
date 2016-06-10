@@ -1,7 +1,7 @@
 ---
-title: "Final project -"
-author: "Lukas Cerno, Hederik de Vries & Casper Roex"
-date: "10 June 2016"
+title: "Final project - Airbnb Pricing in Amsterdam"
+author: Lukas Cerno, Hederik de Vries & Casper Roex
+date: "16 June 2016"
 output: html_document
 ---
 
