@@ -12,12 +12,28 @@
 # Clean the workspace
 rm(list=ls())
 
+
 #Set Final-project as Directory
-#setwd("..")
+#setwd("../R/BDA/Final-project")
 
 # Set up the working directory
 local_directory <- getwd()
 
-# Install and load required packages
-source(paste(local_directory,"R/library.R", sep="/"))
+report_file = "Final project"
 
+# Install and load required packages
+source(paste(local_directory,"R/allPublicLibraries.R", sep="/"))
+source(paste(local_directory,"R/MartrixOperations.R", sep="/"))
+source(paste(local_directory,"R/heatmapOutput.R", sep = "/"))
+source(paste(local_directory,"R/runcode.R", sep = "/"))
+
+if (require(shiny) == FALSE) 
+  install.packages("shiny")
+
+#Load the csv in the "data" folder into the variable gadata
+#if (!exists("airbnbdata")) 
+#  airbnbdata <- read.csv("Data/Airbnb_main.csv", sep=","),rm("X"))
+
+# Create the report
+
+                                
