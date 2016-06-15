@@ -41,15 +41,44 @@
 
     <!-- SLIDES -->
     <slide class="" id="slide-1" style="background:;">
-  <hgroup>
-    <h2>Business objective</h2>
-  </hgroup>
   <article data-timings="">
-    <h2>Including Plots</h2>
+    <pre><code class="r">getwd()
+setwd(&quot;../Final-project&quot;)
+list.files()
+rm(list = ls())  # Clean up the memory, if we want to rerun from scratch
+</code></pre>
 
-<p>You can also embed plots, for example:</p>
+<h2>Business objective</h2>
 
-<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+<h2>Including Plots</h2>
+
+<pre><code class="r">ProjectData &lt;- read.csv(&quot;Data/Airbnb_main.csv&quot;, sep = &quot;;&quot;, dec = &quot;,&quot;)  # this contains only the matrix ProjectData
+</code></pre>
+
+<pre><code>## Warning in file(file, &quot;rt&quot;): cannot open file &#39;Data/Airbnb_main.csv&#39;: No
+## such file or directory
+</code></pre>
+
+<pre><code>## Error in file(file, &quot;rt&quot;): cannot open the connection
+</code></pre>
+
+<pre><code class="r">ProjectData = data.matrix(ProjectData)
+</code></pre>
+
+<pre><code>## Error in is.data.frame(frame): object &#39;ProjectData&#39; not found
+</code></pre>
+
+<pre><code class="r">colnames(ProjectData) &lt;- gsub(&quot;\\.&quot;, &quot; &quot;, colnames(ProjectData))
+</code></pre>
+
+<pre><code>## Error in is.data.frame(x): object &#39;ProjectData&#39; not found
+</code></pre>
+
+<pre><code>## Error in data.frame(round(ProjectData, 2)): object &#39;ProjectData&#39; not found
+</code></pre>
+
+<pre><code>## Error in rownames(show_data): object &#39;show_data&#39; not found
+</code></pre>
 
   </article>
   <!-- Presenter Notes -->
@@ -61,7 +90,7 @@
     <ul>
       <li>
       <a href="#" target="_self" rel='tooltip' 
-        data-slide=1 title='Business objective'>
+        data-slide=1 title='NA'>
          1
       </a>
     </li>

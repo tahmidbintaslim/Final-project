@@ -16,33 +16,19 @@ list.files()
 rm(list=ls()) # Clean up the memory, if we want to rerun from scratch
 ```
 
+## Business objective
+
+
+
+## Including Plots
+
 ```{r echo=TRUE, eval=TRUE, tidy=TRUE}
 ProjectData <- read.csv("Data/Airbnb_main.csv", sep=";", dec=",") # this contains only the matrix ProjectData
   ProjectData=data.matrix(ProjectData) 
 colnames(ProjectData)<-gsub("\\."," ",colnames(ProjectData))
 ```
 
-
-## Business objective
-
-  
-
-## Including Plots
-
-
 ```{r echo=FALSE, message=FALSE, prompt=FALSE, results='asis'}
 show_data = data.frame(round(ProjectData,2))[1:50,]
 show_data$Variables = rownames(show_data)
 ```
-
-# Simple Bar Plot 
-```counts <- table(c(58))
-cbarplot(counts, main="Car Distribution", 
-  	xlab="Number of Gears")
-```
-
-
-
-
-
-

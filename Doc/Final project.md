@@ -7,12 +7,55 @@ output: html_document
 
 
 
+
+```r
+getwd()
+setwd("../Final-project")
+list.files()
+rm(list = ls())  # Clean up the memory, if we want to rerun from scratch
+```
+
 ## Business objective
+
 
 
 ## Including Plots
 
-You can also embed plots, for example:
+
+```r
+ProjectData <- read.csv("Data/Airbnb_main.csv", sep = ";", dec = ",")  # this contains only the matrix ProjectData
+```
+
+```
+## Warning in file(file, "rt"): cannot open file 'Data/Airbnb_main.csv': No
+## such file or directory
+```
+
+```
+## Error in file(file, "rt"): cannot open the connection
+```
+
+```r
+ProjectData = data.matrix(ProjectData)
+```
+
+```
+## Error in is.data.frame(frame): object 'ProjectData' not found
+```
+
+```r
+colnames(ProjectData) <- gsub("\\.", " ", colnames(ProjectData))
+```
+
+```
+## Error in is.data.frame(x): object 'ProjectData' not found
+```
 
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```
+## Error in data.frame(round(ProjectData, 2)): object 'ProjectData' not found
+```
+
+```
+## Error in rownames(show_data): object 'show_data' not found
+```

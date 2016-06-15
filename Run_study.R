@@ -32,8 +32,9 @@ if (require(shiny) == FALSE)
 
 #Load the csv in the "data" folder into the variable gadata
 #if (!exists("airbnbdata")) 
-#  airbnbdata <- read.csv("Data/Airbnb_main.csv", sep=","),rm("X"))
+#  airbnbdata <- read.csv("Data/Airbnb_main.csv", sep=""),rm("X"))
 
 # Create the report
+source(paste(local_directory,"Run_study.R", sep = "/"))
 
                                 
