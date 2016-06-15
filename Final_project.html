@@ -123,18 +123,635 @@ $(document).ready(function () {
 </div>
 
 
+<p>This report analyses a data set from Airbnb, an online broker for short-stay housing around the world, to detect the impact of housing attributes on per night prices. A subset was used of [xxx] properties in the centre of Amsterdam, with price per night divided by the maximum number of guests regressed on a number of explanatory variables. These variables include the number of bedrooms per guest, the quality of the host (as a function of rating and number of reviews), the level of privacy (shared room, private room, or entire apartment), and several amenities (airconditioning, free parking, WiFi, washing machine, and bath). We find that â€¦.</p>
 <pre class="r"><code>getwd()
 setwd(&quot;../Final-project&quot;)
 list.files()
 rm(list = ls())  # Clean up the memory, if we want to rerun from scratch</code></pre>
+<pre class="r"><code>ProjectData &lt;- read.csv(&quot;Data/Airbnb_main.csv&quot;, sep = &quot;;&quot;, dec = &quot;,&quot;)  # this contains only the matrix ProjectData</code></pre>
+<pre class="r"><code>ProjectData$priceperguest = ProjectData$price / ProjectData$accommodates
+ProjectData$sharedroom = ifelse(ProjectData$room_type == &quot;Shared room&quot;, 1 ,0)
+ProjectData$private_room = ifelse(ProjectData$room_type == &quot;Private room&quot;, 1 ,0)
+ProjectData$bedroomsperguest = ProjectData$bedrooms / ProjectData$accommodates
+ProjectData$realbed = ifelse(ProjectData$bed_type == &quot;Real Bed&quot; ,1 ,0)</code></pre>
+<pre class="r"><code>Subset_full &lt;- subset(ProjectData, select = c(&quot;id&quot;,&quot;price&quot;,&quot;neighbourhood_cleansed&quot;,&quot;priceperguest&quot;,&quot;sharedroom&quot;,&quot;private_room&quot;,&quot;bedroomsperguest&quot;,&quot;realbed&quot;,&quot;review_scores_rating&quot;,&quot;Air.Conditioning&quot;,&quot;Free.Parking.on.Premises&quot;,&quot;Wireless.Internet&quot;,&quot;Washer&quot;,&quot;Hot.Tub&quot;,&quot;Pets.Allowed&quot;))
+Subset_full &lt;- na.omit(Subset_full)</code></pre>
+<pre class="r"><code>Subset_num &lt;- subset(ProjectData, select = c(&quot;price&quot;,&quot;priceperguest&quot;,&quot;sharedroom&quot;,&quot;private_room&quot;,&quot;bedroomsperguest&quot;,&quot;realbed&quot;,&quot;review_scores_rating&quot;,&quot;Air.Conditioning&quot;,&quot;Free.Parking.on.Premises&quot;,&quot;Wireless.Internet&quot;,&quot;Washer&quot;,&quot;Hot.Tub&quot;,&quot;Pets.Allowed&quot;))
+Subset_num &lt;- na.omit(Subset_num)</code></pre>
 <div id="business-objective" class="section level2">
 <h2>Business objective</h2>
 </div>
 <div id="including-plots" class="section level2">
 <h2>Including Plots</h2>
-<pre class="r"><code>ProjectData &lt;- read.csv(&quot;Data/Airbnb_main.csv&quot;, sep = &quot;;&quot;, dec = &quot;,&quot;)  # this contains only the matrix ProjectData
-ProjectData = data.matrix(ProjectData)
-colnames(ProjectData) &lt;- gsub(&quot;\\.&quot;, &quot; &quot;, colnames(ProjectData))</code></pre>
+<pre class="r"><code>hist(ProjectData[, &quot;price&quot;], freq = TRUE, breaks = 100, main = &quot;Histogram of Airbnb prices (in $)&quot;, 
+    include.lowest = TRUE)</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+<!-- Table generated in R 3.3.0 by googleVis 0.5.10 package -->
+<!-- Wed Jun 15 22:16:37 2016 -->
+<!-- jsHeader -->
+<script type="text/javascript">
+ 
+// jsData 
+function gvisDataTableIDe346ea33e () {
+var data = new google.visualization.DataTable();
+var datajson =
+[
+ [
+ "price",
+"1",
+"0.54",
+"-0.06",
+"-0.31",
+"0.03",
+"0.08",
+"0.09",
+"0.06",
+"-0.04",
+"0",
+"0.08",
+"0.09",
+"0.04" 
+],
+[
+ "priceperguest",
+"0.54",
+"1",
+"-0.06",
+"-0.18",
+"0.17",
+"0.05",
+"0.15",
+"0.05",
+"-0.16",
+"0.03",
+"0.02",
+"0.04",
+"-0.03" 
+],
+[
+ "sharedroom",
+"-0.06",
+"-0.06",
+"1",
+"-0.03",
+"0.03",
+"-0.16",
+"-0.05",
+"0.01",
+"0",
+"-0.09",
+"-0.01",
+"0",
+"0" 
+],
+[
+ "private_room",
+"-0.31",
+"-0.18",
+"-0.03",
+"1",
+"0.07",
+"-0.08",
+"-0.12",
+"0.01",
+"0.07",
+"-0.05",
+"-0.13",
+"-0.01",
+"-0.02" 
+],
+[
+ "bedroomsperguest",
+"0.03",
+"0.17",
+"0.03",
+"0.07",
+"1",
+"0.04",
+"0.07",
+"-0.01",
+"0.05",
+"0.02",
+"0.14",
+"0.02",
+"-0.03" 
+],
+[
+ "realbed",
+"0.08",
+"0.05",
+"-0.16",
+"-0.08",
+"0.04",
+"1",
+"0.03",
+"0",
+"0.01",
+"0.03",
+"0.05",
+"-0.01",
+"0" 
+],
+[
+ "review_scores_rating",
+"0.09",
+"0.15",
+"-0.05",
+"-0.12",
+"0.07",
+"0.03",
+"1",
+"0.02",
+"-0.02",
+"0.09",
+"0.1",
+"0.01",
+"-0.04" 
+],
+[
+ "Air.Conditioning",
+"0.06",
+"0.05",
+"0.01",
+"0.01",
+"-0.01",
+"0",
+"0.02",
+"1",
+"0.03",
+"0.02",
+"0.01",
+"0.07",
+"0" 
+],
+[
+ "Free.Parking.on.Premises",
+"-0.04",
+"-0.16",
+"0",
+"0.07",
+"0.05",
+"0.01",
+"-0.02",
+"0.03",
+"1",
+"-0.01",
+"0",
+"0.01",
+"0.06" 
+],
+[
+ "Wireless.Internet",
+"0",
+"0.03",
+"-0.09",
+"-0.05",
+"0.02",
+"0.03",
+"0.09",
+"0.02",
+"-0.01",
+"1",
+"0.17",
+"0.03",
+"-0.02" 
+],
+[
+ "Washer",
+"0.08",
+"0.02",
+"-0.01",
+"-0.13",
+"0.14",
+"0.05",
+"0.1",
+"0.01",
+"0",
+"0.17",
+"1",
+"0.05",
+"0.01" 
+],
+[
+ "Hot.Tub",
+"0.09",
+"0.04",
+"0",
+"-0.01",
+"0.02",
+"-0.01",
+"0.01",
+"0.07",
+"0.01",
+"0.03",
+"0.05",
+"1",
+"0.02" 
+],
+[
+ "Pets.Allowed",
+"0.04",
+"-0.03",
+"0",
+"-0.02",
+"-0.03",
+"0",
+"-0.04",
+"0",
+"0.06",
+"-0.02",
+"0.01",
+"0.02",
+"1" 
+] 
+];
+data.addColumn('string','V1');
+data.addColumn('string','price');
+data.addColumn('string','priceperguest');
+data.addColumn('string','sharedroom');
+data.addColumn('string','private_room');
+data.addColumn('string','bedroomsperguest');
+data.addColumn('string','realbed');
+data.addColumn('string','review_scores_rating');
+data.addColumn('string','Air.Conditioning');
+data.addColumn('string','Free.Parking.on.Premises');
+data.addColumn('string','Wireless.Internet');
+data.addColumn('string','Washer');
+data.addColumn('string','Hot.Tub');
+data.addColumn('string','Pets.Allowed');
+data.addRows(datajson);
+return(data);
+}
+ 
+// jsDrawChart
+function drawChartTableIDe346ea33e() {
+var data = gvisDataTableIDe346ea33e();
+var options = {};
+options["allowHtml"] = true;
+options["width"] =   1920;
+options["height"] =    378;
+options["allowHTML"] = true;
+
+    var chart = new google.visualization.Table(
+    document.getElementById('TableIDe346ea33e')
+    );
+    chart.draw(data,options);
+    
+
+}
+  
+ 
+// jsDisplayChart
+(function() {
+var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+var chartid = "table";
+  
+// Manually see if chartid is in pkgs (not all browsers support Array.indexOf)
+var i, newPackage = true;
+for (i = 0; newPackage && i < pkgs.length; i++) {
+if (pkgs[i] === chartid)
+newPackage = false;
+}
+if (newPackage)
+  pkgs.push(chartid);
+  
+// Add the drawChart function to the global list of callbacks
+callbacks.push(drawChartTableIDe346ea33e);
+})();
+function displayChartTableIDe346ea33e() {
+  var pkgs = window.__gvisPackages = window.__gvisPackages || [];
+  var callbacks = window.__gvisCallbacks = window.__gvisCallbacks || [];
+  window.clearTimeout(window.__gvisLoad);
+  // The timeout is set to 100 because otherwise the container div we are
+  // targeting might not be part of the document yet
+  window.__gvisLoad = setTimeout(function() {
+  var pkgCount = pkgs.length;
+  google.load("visualization", "1", { packages:pkgs, callback: function() {
+  if (pkgCount != pkgs.length) {
+  // Race condition where another setTimeout call snuck in after us; if
+  // that call added a package, we must not shift its callback
+  return;
+}
+while (callbacks.length > 0)
+callbacks.shift()();
+} });
+}, 100);
+}
+ 
+// jsFooter
+</script>
+<!-- jsChart -->
+<script src="data:text/javascript; charset=utf-8,if%28%21window%5B%27googleLT%5F%27%5D%29%7Bwindow%5B%27googleLT%5F%27%5D%3D%28new%20Date%28%29%29%2EgetTime%28%29%3B%7Dif%20%28%21window%5B%27google%27%5D%29%20%7B%0Awindow%5B%27google%27%5D%20%3D%20%7B%7D%3B%0A%7D%0Aif%20%28%21window%5B%27google%27%5D%5B%27loader%27%5D%29%20%7B%0Awindow%5B%27google%27%5D%5B%27loader%27%5D%20%3D%20%7B%7D%3B%0Agoogle%2Eloader%2EServiceBase%20%3D%20%27https%3A%2F%2Fwww%2Egoogle%2Ecom%2Fuds%27%3B%0Agoogle%2Eloader%2EGoogleApisBase%20%3D%20%27https%3A%2F%2Fajax%2Egoogleapis%2Ecom%2Fajax%27%3B%0Agoogle%2Eloader%2EApiKey%20%3D%20%27notsupplied%27%3B%0Agoogle%2Eloader%2EKeyVerified%20%3D%20true%3B%0Agoogle%2Eloader%2ELoadFailure%20%3D%20false%3B%0Agoogle%2Eloader%2ESecure%20%3D%20true%3B%0Agoogle%2Eloader%2EGoogleLocale%20%3D%20%27www%2Egoogle%2Ecom%27%3B%0Agoogle%2Eloader%2EClientLocation%20%3D%20null%3B%0Agoogle%2Eloader%2EAdditionalParams%20%3D%20%27%27%3B%0A%28function%28%29%20%7Bfunction%20g%28a%29%7Breturn%20a%20in%20l%3Fl%5Ba%5D%3Al%5Ba%5D%3D%2D1%21%3Dnavigator%2EuserAgent%2EtoLowerCase%28%29%2EindexOf%28a%29%7Dvar%20l%3D%7B%7D%3Bfunction%20m%28a%2Cb%29%7Bvar%20c%3Dfunction%28%29%7B%7D%3Bc%2Eprototype%3Db%2Eprototype%3Ba%2Eca%3Db%2Eprototype%3Ba%2Eprototype%3Dnew%20c%7Dfunction%20n%28a%2Cb%2Cc%29%7Bvar%20d%3DArray%2Eprototype%2Eslice%2Ecall%28arguments%2C2%29%7C%7C%5B%5D%3Breturn%20function%28%29%7Breturn%20a%2Eapply%28b%2Cd%2Econcat%28Array%2Eprototype%2Eslice%2Ecall%28arguments%29%29%29%7D%7Dfunction%20p%28a%29%7Ba%3DError%28a%29%3Ba%2EtoString%3Dfunction%28%29%7Breturn%20this%2Emessage%7D%3Breturn%20a%7D%0Afunction%20q%28a%2Cb%29%7Bfor%28var%20c%3Da%2Esplit%28%2F%5C%2E%2F%29%2Cd%3Dwindow%2Ce%3D0%3Be%3Cc%2Elength%2D1%3Be%2B%2B%29d%5Bc%5Be%5D%5D%7C%7C%28d%5Bc%5Be%5D%5D%3D%7B%7D%29%2Cd%3Dd%5Bc%5Be%5D%5D%3Bd%5Bc%5Bc%2Elength%2D1%5D%5D%3Db%7Dfunction%20r%28a%2Cb%2Cc%29%7Ba%5Bb%5D%3Dc%7Dif%28%21t%29var%20t%3Dq%3Bif%28%21u%29var%20u%3Dr%3Bgoogle%2Eloader%2EF%3D%7B%7D%3Bt%28%22google%2Eloader%2Ecallbacks%22%2Cgoogle%2Eloader%2EF%29%3Bvar%20v%3D%7B%7D%2Cw%3D%7B%7D%3Bgoogle%2Eloader%2Eeval%3D%7B%7D%3Bt%28%22google%2Eloader%2Eeval%22%2Cgoogle%2Eloader%2Eeval%29%3B%0Agoogle%2Eload%3Dfunction%28a%2Cb%2Cc%29%7Bfunction%20d%28a%29%7Bvar%20b%3Da%2Esplit%28%22%2E%22%29%3Bif%282%3Cb%2Elength%29throw%20p%28%22Module%3A%20%27%22%2Ba%2B%22%27%20not%20found%21%22%29%3B%22undefined%22%21%3Dtypeof%20b%5B1%5D%26%26%28e%3Db%5B0%5D%2Cc%2Epackages%3Dc%2Epackages%7C%7C%5B%5D%2Cc%2Epackages%2Epush%28b%5B1%5D%29%29%7Dvar%20e%3Da%3Bc%3Dc%7C%7C%7B%7D%3Bif%28a%20instanceof%20Array%7C%7Ca%26%26%22object%22%3D%3Dtypeof%20a%26%26%22function%22%3D%3Dtypeof%20a%2Ejoin%26%26%22function%22%3D%3Dtypeof%20a%2Ereverse%29for%28var%20f%3D0%3Bf%3Ca%2Elength%3Bf%2B%2B%29d%28a%5Bf%5D%29%3Belse%20d%28a%29%3Bif%28a%3Dv%5B%22%3A%22%2Be%5D%29%7Bc%26%26%21c%2Elanguage%26%26c%2Elocale%26%26%28c%2Elanguage%3Dc%2Elocale%29%3Bc%26%26%22string%22%3D%3Dtypeof%20c%2Ecallback%26%26%28f%3Dc%2Ecallback%2Cf%2Ematch%28%2F%5E%5B%5B%5C%5DA%2DZa%2Dz0%2D9%2E%5F%5D%2B%24%2F%29%26%26%28f%3D%0Awindow%2Eeval%28f%29%2Cc%2Ecallback%3Df%29%29%3Bif%28%28f%3Dc%26%26null%21%3Dc%2Ecallback%29%26%26%21a%2ED%28b%29%29throw%20p%28%22Module%3A%20%27%22%2Be%2B%22%27%20must%20be%20loaded%20before%20DOM%20onLoad%21%22%29%3Bf%3Fa%2Eu%28b%2Cc%29%3Fwindow%2EsetTimeout%28c%2Ecallback%2C0%29%3Aa%2Eload%28b%2Cc%29%3Aa%2Eu%28b%2Cc%29%7C%7Ca%2Eload%28b%2Cc%29%7Delse%20throw%20p%28%22Module%3A%20%27%22%2Be%2B%22%27%20not%20found%21%22%29%3B%7D%3Bt%28%22google%2Eload%22%2Cgoogle%2Eload%29%3B%0Agoogle%2Eba%3Dfunction%28a%2Cb%29%7Bb%3F%280%3D%3Dx%2Elength%26%26%28y%28window%2C%22load%22%2Cz%29%2C%21g%28%22msie%22%29%26%26%21g%28%22safari%22%29%26%26%21g%28%22konqueror%22%29%26%26g%28%22mozilla%22%29%7C%7Cwindow%2Eopera%3Fwindow%2EaddEventListener%28%22DOMContentLoaded%22%2Cz%2C%211%29%3Ag%28%22msie%22%29%3Fdocument%2Ewrite%28%22%3Cscript%20defer%20onreadystatechange%3D%27google%2Eloader%2EdomReady%28%29%27%20src%3D%2F%2F%3A%3E%5Cx3c%2Fscript%3E%22%29%3A%28g%28%22safari%22%29%7C%7Cg%28%22konqueror%22%29%29%26%26window%2EsetTimeout%28B%2C10%29%29%2Cx%2Epush%28a%29%29%3Ay%28window%2C%22load%22%2Ca%29%7D%3Bt%28%22google%2EsetOnLoadCallback%22%2Cgoogle%2Eba%29%3B%0Afunction%20y%28a%2Cb%2Cc%29%7Bif%28a%2EaddEventListener%29a%2EaddEventListener%28b%2Cc%2C%211%29%3Belse%20if%28a%2EattachEvent%29a%2EattachEvent%28%22on%22%2Bb%2Cc%29%3Belse%7Bvar%20d%3Da%5B%22on%22%2Bb%5D%3Ba%5B%22on%22%2Bb%5D%3Dnull%21%3Dd%3FC%28%5Bc%2Cd%5D%29%3Ac%7D%7Dfunction%20C%28a%29%7Breturn%20function%28%29%7Bfor%28var%20b%3D0%3Bb%3Ca%2Elength%3Bb%2B%2B%29a%5Bb%5D%28%29%7D%7Dvar%20x%3D%5B%5D%3Bgoogle%2Eloader%2EW%3Dfunction%28%29%7Bvar%20a%3Dwindow%2Eevent%2EsrcElement%3B%22complete%22%3D%3Da%2EreadyState%26%26%28a%2Eonreadystatechange%3Dnull%2Ca%2EparentNode%2EremoveChild%28a%29%2Cz%28%29%29%7D%3Bt%28%22google%2Eloader%2EdomReady%22%2Cgoogle%2Eloader%2EW%29%3Bvar%20D%3D%7Bloaded%3A%210%2Ccomplete%3A%210%7D%3B%0Afunction%20B%28%29%7BD%5Bdocument%2EreadyState%5D%3Fz%28%29%3A0%3Cx%2Elength%26%26window%2EsetTimeout%28B%2C10%29%7Dfunction%20z%28%29%7Bfor%28var%20a%3D0%3Ba%3Cx%2Elength%3Ba%2B%2B%29x%5Ba%5D%28%29%3Bx%2Elength%3D0%7D%0Agoogle%2Eloader%2Ef%3Dfunction%28a%2Cb%2Cc%29%7Bif%28c%29%7Bvar%20d%3B%22script%22%3D%3Da%3F%28d%3Ddocument%2EcreateElement%28%22script%22%29%2Cd%2Etype%3D%22text%2Fjavascript%22%2Cd%2Esrc%3Db%29%3A%22css%22%3D%3Da%26%26%28d%3Ddocument%2EcreateElement%28%22link%22%29%2Cd%2Etype%3D%22text%2Fcss%22%2Cd%2Ehref%3Db%2Cd%2Erel%3D%22stylesheet%22%29%3B%28a%3Ddocument%2EgetElementsByTagName%28%22head%22%29%5B0%5D%29%7C%7C%28a%3Ddocument%2Ebody%2EparentNode%2EappendChild%28document%2EcreateElement%28%22head%22%29%29%29%3Ba%2EappendChild%28d%29%7Delse%22script%22%3D%3Da%3Fdocument%2Ewrite%28%27%3Cscript%20src%3D%22%27%2Bb%2B%27%22%20type%3D%22text%2Fjavascript%22%3E%5Cx3c%2Fscript%3E%27%29%3A%22css%22%3D%3Da%26%26document%2Ewrite%28%27%3Clink%20href%3D%22%27%2Bb%2B%27%22%20type%3D%22text%2Fcss%22%20rel%3D%22stylesheet%22%3E%3C%2Flink%3E%27%29%7D%3B%0At%28%22google%2Eloader%2EwriteLoadTag%22%2Cgoogle%2Eloader%2Ef%29%3Bgoogle%2Eloader%2EZ%3Dfunction%28a%29%7Bw%3Da%7D%3Bt%28%22google%2Eloader%2Erfm%22%2Cgoogle%2Eloader%2EZ%29%3Bgoogle%2Eloader%2Eaa%3Dfunction%28a%29%7Bfor%28var%20b%20in%20a%29%22string%22%3D%3Dtypeof%20b%26%26b%26%26%22%3A%22%3D%3Db%2EcharAt%280%29%26%26%21v%5Bb%5D%26%26%28v%5Bb%5D%3Dnew%20E%28b%2Esubstring%281%29%2Ca%5Bb%5D%29%29%7D%3Bt%28%22google%2Eloader%2Erpl%22%2Cgoogle%2Eloader%2Eaa%29%3Bgoogle%2Eloader%2E%24%3Dfunction%28a%29%7Bif%28%28a%3Da%2Especs%29%26%26a%2Elength%29for%28var%20b%3D0%3Bb%3Ca%2Elength%3B%2B%2Bb%29%7Bvar%20c%3Da%5Bb%5D%3B%22string%22%3D%3Dtypeof%20c%3Fv%5B%22%3A%22%2Bc%5D%3Dnew%20F%28c%29%3A%28c%3Dnew%20G%28c%2Ename%2Cc%2EbaseSpec%2Cc%2EcustomSpecs%29%2Cv%5B%22%3A%22%2Bc%2Ename%5D%3Dc%29%7D%7D%3Bt%28%22google%2Eloader%2Erm%22%2Cgoogle%2Eloader%2E%24%29%3B%0Agoogle%2Eloader%2Eloaded%3Dfunction%28a%29%7Bv%5B%22%3A%22%2Ba%2Emodule%5D%2Eo%28a%29%7D%3Bt%28%22google%2Eloader%2Eloaded%22%2Cgoogle%2Eloader%2Eloaded%29%3Bgoogle%2Eloader%2EV%3Dfunction%28%29%7Breturn%22qid%3D%22%2B%28%28new%20Date%29%2EgetTime%28%29%2EtoString%2816%29%2BMath%2Efloor%281E7%2AMath%2Erandom%28%29%29%2EtoString%2816%29%29%7D%3Bt%28%22google%2Eloader%2EcreateGuidArg%5F%22%2Cgoogle%2Eloader%2EV%29%3Bq%28%22google%5FexportSymbol%22%2Cq%29%3Bq%28%22google%5FexportProperty%22%2Cr%29%3Bgoogle%2Eloader%2Ea%3D%7B%7D%3Bt%28%22google%2Eloader%2Ethemes%22%2Cgoogle%2Eloader%2Ea%29%3Bgoogle%2Eloader%2Ea%2EK%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fbubblegum%2Ecss%22%3Bu%28google%2Eloader%2Ea%2C%22BUBBLEGUM%22%2Cgoogle%2Eloader%2Ea%2EK%29%3B%0Agoogle%2Eloader%2Ea%2EM%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fgreensky%2Ecss%22%3Bu%28google%2Eloader%2Ea%2C%22GREENSKY%22%2Cgoogle%2Eloader%2Ea%2EM%29%3Bgoogle%2Eloader%2Ea%2EL%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fespresso%2Ecss%22%3Bu%28google%2Eloader%2Ea%2C%22ESPRESSO%22%2Cgoogle%2Eloader%2Ea%2EL%29%3Bgoogle%2Eloader%2Ea%2EO%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fshiny%2Ecss%22%3Bu%28google%2Eloader%2Ea%2C%22SHINY%22%2Cgoogle%2Eloader%2Ea%2EO%29%3Bgoogle%2Eloader%2Ea%2EN%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fminimalist%2Ecss%22%3Bu%28google%2Eloader%2Ea%2C%22MINIMALIST%22%2Cgoogle%2Eloader%2Ea%2EN%29%3Bgoogle%2Eloader%2Ea%2EP%3D%22%2F%2Fwww%2Egoogle%2Ecom%2Fcse%2Fstyle%2Flook%2Fv2%2Fdefault%2Ecss%22%3B%0Au%28google%2Eloader%2Ea%2C%22V2%5FDEFAULT%22%2Cgoogle%2Eloader%2Ea%2EP%29%3Bfunction%20F%28a%29%7Bthis%2Eb%3Da%3Bthis%2EB%3D%5B%5D%3Bthis%2EA%3D%7B%7D%3Bthis%2El%3D%7B%7D%3Bthis%2Eg%3D%7B%7D%3Bthis%2Es%3D%210%3Bthis%2Ec%3D%2D1%7D%0AF%2Eprototype%2Ei%3Dfunction%28a%2Cb%29%7Bvar%20c%3D%22%22%3Bvoid%200%21%3Db%26%26%28void%200%21%3Db%2Elanguage%26%26%28c%2B%3D%22%26hl%3D%22%2BencodeURIComponent%28b%2Elanguage%29%29%2Cvoid%200%21%3Db%2Enocss%26%26%28c%2B%3D%22%26output%3D%22%2BencodeURIComponent%28%22nocss%3D%22%2Bb%2Enocss%29%29%2Cvoid%200%21%3Db%2Enooldnames%26%26%28c%2B%3D%22%26nooldnames%3D%22%2BencodeURIComponent%28b%2Enooldnames%29%29%2Cvoid%200%21%3Db%2Epackages%26%26%28c%2B%3D%22%26packages%3D%22%2BencodeURIComponent%28b%2Epackages%29%29%2Cnull%21%3Db%2Ecallback%26%26%28c%2B%3D%22%26async%3D2%22%29%2Cvoid%200%21%3Db%2Estyle%26%26%28c%2B%3D%22%26style%3D%22%2BencodeURIComponent%28b%2Estyle%29%29%2Cvoid%200%21%3Db%2Enoexp%26%26%28c%2B%3D%22%26noexp%3Dtrue%22%29%2Cvoid%200%21%3Db%2Eother%5Fparams%26%26%28c%2B%3D%22%26%22%2Bb%2Eother%5Fparams%29%29%3B%0Aif%28%21this%2Es%29%7Bgoogle%5Bthis%2Eb%5D%26%26google%5Bthis%2Eb%5D%2EJSHash%26%26%28c%2B%3D%22%26sig%3D%22%2BencodeURIComponent%28google%5Bthis%2Eb%5D%2EJSHash%29%29%3Bvar%20d%3D%5B%5D%2Ce%3Bfor%28e%20in%20this%2EA%29%22%3A%22%3D%3De%2EcharAt%280%29%26%26d%2Epush%28e%2Esubstring%281%29%29%3Bfor%28e%20in%20this%2El%29%22%3A%22%3D%3De%2EcharAt%280%29%26%26this%2El%5Be%5D%26%26d%2Epush%28e%2Esubstring%281%29%29%3Bc%2B%3D%22%26have%3D%22%2BencodeURIComponent%28d%2Ejoin%28%22%2C%22%29%29%7Dreturn%20google%2Eloader%2EServiceBase%2B%22%2F%3Ffile%3D%22%2Bthis%2Eb%2B%22%26v%3D%22%2Ba%2Bgoogle%2Eloader%2EAdditionalParams%2Bc%7D%3B%0AF%2Eprototype%2EH%3Dfunction%28a%29%7Bvar%20b%3Dnull%3Ba%26%26%28b%3Da%2Epackages%29%3Bvar%20c%3Dnull%3Bif%28b%29if%28%22string%22%3D%3Dtypeof%20b%29c%3D%5Ba%2Epackages%5D%3Belse%20if%28b%2Elength%29for%28c%3D%5B%5D%2Ca%3D0%3Ba%3Cb%2Elength%3Ba%2B%2B%29%22string%22%3D%3Dtypeof%20b%5Ba%5D%26%26c%2Epush%28b%5Ba%5D%2Ereplace%28%2F%5E%5Cs%2A%7C%5Cs%2A%24%2F%2C%22%22%29%2EtoLowerCase%28%29%29%3Bc%7C%7C%28c%3D%5B%22default%22%5D%29%3Bb%3D%5B%5D%3Bfor%28a%3D0%3Ba%3Cc%2Elength%3Ba%2B%2B%29this%2EA%5B%22%3A%22%2Bc%5Ba%5D%5D%7C%7Cb%2Epush%28c%5Ba%5D%29%3Breturn%20b%7D%3B%0AF%2Eprototype%2Eload%3Dfunction%28a%2Cb%29%7Bvar%20c%3Dthis%2EH%28b%29%2Cd%3Db%26%26null%21%3Db%2Ecallback%3Bif%28d%29var%20e%3Dnew%20H%28b%2Ecallback%29%3Bfor%28var%20f%3D%5B%5D%2Ch%3Dc%2Elength%2D1%3B0%3C%3Dh%3Bh%2D%2D%29%7Bvar%20k%3Dc%5Bh%5D%3Bd%26%26e%2ER%28k%29%3Bthis%2El%5B%22%3A%22%2Bk%5D%3F%28c%2Esplice%28h%2C1%29%2Cd%26%26this%2Eg%5B%22%3A%22%2Bk%5D%2Epush%28e%29%29%3Af%2Epush%28k%29%7Dif%28c%2Elength%29%7Bb%26%26b%2Epackages%26%26%28b%2Epackages%3Dc%2Esort%28%29%2Ejoin%28%22%2C%22%29%29%3Bfor%28h%3D0%3Bh%3Cf%2Elength%3Bh%2B%2B%29k%3Df%5Bh%5D%2Cthis%2Eg%5B%22%3A%22%2Bk%5D%3D%5B%5D%2Cd%26%26this%2Eg%5B%22%3A%22%2Bk%5D%2Epush%28e%29%3Bif%28b%7C%7Cnull%3D%3Dw%5B%22%3A%22%2Bthis%2Eb%5D%7C%7Cnull%3D%3Dw%5B%22%3A%22%2Bthis%2Eb%5D%2Eversions%5B%22%3A%22%2Ba%5D%7C%7Cgoogle%2Eloader%2EAdditionalParams%7C%7C%21this%2Es%29b%26%26b%2Eautoloaded%7C%7Cgoogle%2Eloader%2Ef%28%22script%22%2Cthis%2Ei%28a%2C%0Ab%29%2Cd%29%3Belse%7Bc%3Dw%5B%22%3A%22%2Bthis%2Eb%5D%3Bgoogle%5Bthis%2Eb%5D%3Dgoogle%5Bthis%2Eb%5D%7C%7C%7B%7D%3Bfor%28var%20A%20in%20c%2Eproperties%29A%26%26%22%3A%22%3D%3DA%2EcharAt%280%29%26%26%28google%5Bthis%2Eb%5D%5BA%2Esubstring%281%29%5D%3Dc%2Eproperties%5BA%5D%29%3Bgoogle%2Eloader%2Ef%28%22script%22%2Cgoogle%2Eloader%2EServiceBase%2Bc%2Epath%2Bc%2Ejs%2Cd%29%3Bc%2Ecss%26%26google%2Eloader%2Ef%28%22css%22%2Cgoogle%2Eloader%2EServiceBase%2Bc%2Epath%2Bc%2Ecss%2Cd%29%7Dthis%2Es%26%26%28this%2Es%3D%211%2Cthis%2Ec%3D%28new%20Date%29%2EgetTime%28%29%2C1%21%3Dthis%2Ec%25100%26%26%28this%2Ec%3D%2D1%29%29%3Bfor%28h%3D0%3Bh%3Cf%2Elength%3Bh%2B%2B%29k%3Df%5Bh%5D%2Cthis%2El%5B%22%3A%22%2Bk%5D%3D%210%7D%7D%3B%0AF%2Eprototype%2Eo%3Dfunction%28a%29%7B%2D1%21%3Dthis%2Ec%26%26%28I%28%22al%5F%22%2Bthis%2Eb%2C%22jl%2E%22%2B%28%28new%20Date%29%2EgetTime%28%29%2Dthis%2Ec%29%2C%210%29%2Cthis%2Ec%3D%2D1%29%3Bthis%2EB%3Dthis%2EB%2Econcat%28a%2Ecomponents%29%3Bgoogle%2Eloader%5Bthis%2Eb%5D%7C%7C%28google%2Eloader%5Bthis%2Eb%5D%3D%7B%7D%29%3Bgoogle%2Eloader%5Bthis%2Eb%5D%2Epackages%3Dthis%2EB%2Eslice%280%29%3Bfor%28var%20b%3D0%3Bb%3Ca%2Ecomponents%2Elength%3Bb%2B%2B%29%7Bthis%2EA%5B%22%3A%22%2Ba%2Ecomponents%5Bb%5D%5D%3D%210%3Bthis%2El%5B%22%3A%22%2Ba%2Ecomponents%5Bb%5D%5D%3D%211%3Bvar%20c%3Dthis%2Eg%5B%22%3A%22%2Ba%2Ecomponents%5Bb%5D%5D%3Bif%28c%29%7Bfor%28var%20d%3D0%3Bd%3Cc%2Elength%3Bd%2B%2B%29c%5Bd%5D%2EU%28a%2Ecomponents%5Bb%5D%29%3Bdelete%20this%2Eg%5B%22%3A%22%2Ba%2Ecomponents%5Bb%5D%5D%7D%7D%7D%3B%0AF%2Eprototype%2Eu%3Dfunction%28a%2Cb%29%7Breturn%200%3D%3Dthis%2EH%28b%29%2Elength%7D%3BF%2Eprototype%2ED%3Dfunction%28%29%7Breturn%210%7D%3Bfunction%20H%28a%29%7Bthis%2ET%3Da%3Bthis%2Ev%3D%7B%7D%3Bthis%2EC%3D0%7DH%2Eprototype%2ER%3Dfunction%28a%29%7Bthis%2EC%2B%2B%3Bthis%2Ev%5B%22%3A%22%2Ba%5D%3D%210%7D%3BH%2Eprototype%2EU%3Dfunction%28a%29%7Bthis%2Ev%5B%22%3A%22%2Ba%5D%26%26%28this%2Ev%5B%22%3A%22%2Ba%5D%3D%211%2Cthis%2EC%2D%2D%2C0%3D%3Dthis%2EC%26%26window%2EsetTimeout%28this%2ET%2C0%29%29%7D%3Bfunction%20G%28a%2Cb%2Cc%29%7Bthis%2Ename%3Da%3Bthis%2ES%3Db%3Bthis%2Ew%3Dc%3Bthis%2EG%3Dthis%2Ej%3D%211%3Bthis%2Em%3D%5B%5D%3Bgoogle%2Eloader%2EF%5Bthis%2Ename%5D%3Dn%28this%2Eo%2Cthis%29%7Dm%28G%2CF%29%3BG%2Eprototype%2Eload%3Dfunction%28a%2Cb%29%7Bvar%20c%3Db%26%26null%21%3Db%2Ecallback%3Bc%3F%28this%2Em%2Epush%28b%2Ecallback%29%2Cb%2Ecallback%3D%22google%2Eloader%2Ecallbacks%2E%22%2Bthis%2Ename%29%3Athis%2Ej%3D%210%3Bb%26%26b%2Eautoloaded%7C%7Cgoogle%2Eloader%2Ef%28%22script%22%2Cthis%2Ei%28a%2Cb%29%2Cc%29%7D%3BG%2Eprototype%2Eu%3Dfunction%28a%2Cb%29%7Breturn%20b%26%26null%21%3Db%2Ecallback%3Fthis%2EG%3Athis%2Ej%7D%3BG%2Eprototype%2Eo%3Dfunction%28%29%7Bthis%2EG%3D%210%3Bfor%28var%20a%3D0%3Ba%3Cthis%2Em%2Elength%3Ba%2B%2B%29window%2EsetTimeout%28this%2Em%5Ba%5D%2C0%29%3Bthis%2Em%3D%5B%5D%7D%3B%0Avar%20J%3Dfunction%28a%2Cb%29%7Breturn%20a%2Estring%3FencodeURIComponent%28a%2Estring%29%2B%22%3D%22%2BencodeURIComponent%28b%29%3Aa%2Eregex%3Fb%2Ereplace%28%2F%28%5E%2E%2A%24%29%2F%2Ca%2Eregex%29%3A%22%22%7D%3BG%2Eprototype%2Ei%3Dfunction%28a%2Cb%29%7Breturn%20this%2EX%28this%2EI%28a%29%2Ca%2Cb%29%7D%3B%0AG%2Eprototype%2EX%3Dfunction%28a%2Cb%2Cc%29%7Bvar%20d%3D%22%22%3Ba%2Ekey%26%26%28d%2B%3D%22%26%22%2BJ%28a%2Ekey%2Cgoogle%2Eloader%2EApiKey%29%29%3Ba%2Eversion%26%26%28d%2B%3D%22%26%22%2BJ%28a%2Eversion%2Cb%29%29%3Bb%3Dgoogle%2Eloader%2ESecure%26%26a%2Essl%3Fa%2Essl%3Aa%2Euri%3Bif%28null%21%3Dc%29for%28var%20e%20in%20c%29a%2Eparams%5Be%5D%3Fd%2B%3D%22%26%22%2BJ%28a%2Eparams%5Be%5D%2Cc%5Be%5D%29%3A%22other%5Fparams%22%3D%3De%3Fd%2B%3D%22%26%22%2Bc%5Be%5D%3A%22base%5Fdomain%22%3D%3De%26%26%28b%3D%22http%3A%2F%2F%22%2Bc%5Be%5D%2Ba%2Euri%2Esubstring%28a%2Euri%2EindexOf%28%22%2F%22%2C7%29%29%29%3Bgoogle%5Bthis%2Ename%5D%3D%7B%7D%3B%2D1%3D%3Db%2EindexOf%28%22%3F%22%29%26%26d%26%26%28d%3D%22%3F%22%2Bd%2Esubstring%281%29%29%3Breturn%20b%2Bd%7D%3BG%2Eprototype%2ED%3Dfunction%28a%29%7Breturn%20this%2EI%28a%29%2Edeferred%7D%3B%0AG%2Eprototype%2EI%3Dfunction%28a%29%7Bif%28this%2Ew%29for%28var%20b%3D0%3Bb%3Cthis%2Ew%2Elength%3B%2B%2Bb%29%7Bvar%20c%3Dthis%2Ew%5Bb%5D%3Bif%28%28new%20RegExp%28c%2Epattern%29%29%2Etest%28a%29%29return%20c%7Dreturn%20this%2ES%7D%3Bfunction%20E%28a%2Cb%29%7Bthis%2Eb%3Da%3Bthis%2Eh%3Db%3Bthis%2Ej%3D%211%7Dm%28E%2CF%29%3BE%2Eprototype%2Eload%3Dfunction%28a%2Cb%29%7Bthis%2Ej%3D%210%3Bgoogle%2Eloader%2Ef%28%22script%22%2Cthis%2Ei%28a%2Cb%29%2C%211%29%7D%3BE%2Eprototype%2Eu%3Dfunction%28%29%7Breturn%20this%2Ej%7D%3BE%2Eprototype%2Eo%3Dfunction%28%29%7B%7D%3B%0AE%2Eprototype%2Ei%3Dfunction%28a%2Cb%29%7Bif%28%21this%2Eh%2Eversions%5B%22%3A%22%2Ba%5D%29%7Bif%28this%2Eh%2Ealiases%29%7Bvar%20c%3Dthis%2Eh%2Ealiases%5B%22%3A%22%2Ba%5D%3Bc%26%26%28a%3Dc%29%7Dif%28%21this%2Eh%2Eversions%5B%22%3A%22%2Ba%5D%29throw%20p%28%22Module%3A%20%27%22%2Bthis%2Eb%2B%22%27%20with%20version%20%27%22%2Ba%2B%22%27%20not%20found%21%22%29%3B%7Dreturn%20google%2Eloader%2EGoogleApisBase%2B%22%2Flibs%2F%22%2Bthis%2Eb%2B%22%2F%22%2Ba%2B%22%2F%22%2Bthis%2Eh%2Eversions%5B%22%3A%22%2Ba%5D%5Bb%26%26b%2Euncompressed%3F%22uncompressed%22%3A%22compressed%22%5D%7D%3BE%2Eprototype%2ED%3Dfunction%28%29%7Breturn%211%7D%3Bvar%20K%3D%211%2CL%3D%5B%5D%2CM%3D%28new%20Date%29%2EgetTime%28%29%2CO%3Dfunction%28%29%7BK%7C%7C%28y%28window%2C%22unload%22%2CN%29%2CK%3D%210%29%7D%2CQ%3Dfunction%28a%2Cb%29%7BO%28%29%3Bif%28%21%28google%2Eloader%2ESecure%7C%7Cgoogle%2Eloader%2EOptions%26%26%211%21%3D%3Dgoogle%2Eloader%2EOptions%2Ecsi%29%29%7Bfor%28var%20c%3D0%3Bc%3Ca%2Elength%3Bc%2B%2B%29a%5Bc%5D%3DencodeURIComponent%28a%5Bc%5D%2EtoLowerCase%28%29%2Ereplace%28%2F%5B%5Ea%2Dz0%2D9%5F%2E%5D%2B%2Fg%2C%22%5F%22%29%29%3Bfor%28c%3D0%3Bc%3Cb%2Elength%3Bc%2B%2B%29b%5Bc%5D%3DencodeURIComponent%28b%5Bc%5D%2EtoLowerCase%28%29%2Ereplace%28%2F%5B%5Ea%2Dz0%2D9%5F%2E%5D%2B%2Fg%2C%22%5F%22%29%29%3Bwindow%2EsetTimeout%28n%28P%2Cnull%2C%22%2F%2Fgg%2Egoogle%2Ecom%2Fcsi%3Fs%3Duds%26v%3D2%26action%3D%22%2Ba%2Ejoin%28%22%2C%22%29%2B%22%26it%3D%22%2Bb%2Ejoin%28%22%2C%22%29%29%2C1E4%29%7D%7D%2CI%3Dfunction%28a%2Cb%2C%0Ac%29%7Bc%3FQ%28%5Ba%5D%2C%5Bb%5D%29%3A%28O%28%29%2CL%2Epush%28%22r%22%2BL%2Elength%2B%22%3D%22%2BencodeURIComponent%28a%2B%28b%3F%22%7C%22%2Bb%3A%22%22%29%29%29%2Cwindow%2EsetTimeout%28N%2C5%3CL%2Elength%3F0%3A15E3%29%29%7D%2CN%3Dfunction%28%29%7Bif%28L%2Elength%29%7Bvar%20a%3Dgoogle%2Eloader%2EServiceBase%3B0%3D%3Da%2EindexOf%28%22http%3A%22%29%26%26%28a%3Da%2Ereplace%28%2F%5Ehttp%3A%2F%2C%22https%3A%22%29%29%3BP%28a%2B%22%2Fstats%3F%22%2BL%2Ejoin%28%22%26%22%29%2B%22%26nc%3D%22%2B%28new%20Date%29%2EgetTime%28%29%2B%22%5F%22%2B%28%28new%20Date%29%2EgetTime%28%29%2DM%29%29%3BL%2Elength%3D0%7D%7D%2CP%3Dfunction%28a%29%7Bvar%20b%3Dnew%20Image%2Cc%3DP%2EY%2B%2B%3BP%2EJ%5Bc%5D%3Db%3Bb%2Eonload%3Db%2Eonerror%3Dfunction%28%29%7Bdelete%20P%2EJ%5Bc%5D%7D%3Bb%2Esrc%3Da%3Bb%3Dnull%7D%3BP%2EJ%3D%7B%7D%3BP%2EY%3D0%3Bq%28%22google%2Eloader%2ErecordCsiStat%22%2CQ%29%3B%0Aq%28%22google%2Eloader%2ErecordStat%22%2CI%29%3Bq%28%22google%2Eloader%2EcreateImageForLogging%22%2CP%29%3B%0A%0A%7D%29%20%28%29%3Bgoogle%2Eloader%2Erm%28%7B%22specs%22%3A%5B%22visualization%22%2C%22payments%22%2C%7B%22name%22%3A%22annotations%22%2C%22baseSpec%22%3A%7B%22uri%22%3A%22http%3A%2F%2Fwww%2Egoogle%2Ecom%2Freviews%2Fscripts%2Fannotations%5Fbootstrap%2Ejs%22%2C%22ssl%22%3Anull%2C%22key%22%3A%7B%22string%22%3A%22key%22%7D%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Atrue%2C%22params%22%3A%7B%22country%22%3A%7B%22string%22%3A%22gl%22%7D%2C%22callback%22%3A%7B%22string%22%3A%22callback%22%7D%2C%22language%22%3A%7B%22string%22%3A%22hl%22%7D%7D%7D%7D%2C%22language%22%2C%22gdata%22%2C%22wave%22%2C%22spreadsheets%22%2C%22search%22%2C%22orkut%22%2C%22feeds%22%2C%22annotations%5Fv2%22%2C%22picker%22%2C%22identitytoolkit%22%2C%7B%22name%22%3A%22maps%22%2C%22baseSpec%22%3A%7B%22uri%22%3A%22http%3A%2F%2Fmaps%2Egoogle%2Ecom%2Fmaps%3Ffile%5Cu003dgoogleapi%22%2C%22ssl%22%3A%22https%3A%2F%2Fmaps%2Dapi%2Dssl%2Egoogle%2Ecom%2Fmaps%3Ffile%5Cu003dgoogleapi%22%2C%22key%22%3A%7B%22string%22%3A%22key%22%7D%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Atrue%2C%22params%22%3A%7B%22callback%22%3A%7B%22regex%22%3A%22callback%5Cu003d%241%5Cu0026async%5Cu003d2%22%7D%2C%22language%22%3A%7B%22string%22%3A%22hl%22%7D%7D%7D%2C%22customSpecs%22%3A%5B%7B%22uri%22%3A%22http%3A%2F%2Fmaps%2Egoogleapis%2Ecom%2Fmaps%2Fapi%2Fjs%22%2C%22ssl%22%3A%22https%3A%2F%2Fmaps%2Egoogleapis%2Ecom%2Fmaps%2Fapi%2Fjs%22%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Atrue%2C%22params%22%3A%7B%22callback%22%3A%7B%22string%22%3A%22callback%22%7D%2C%22language%22%3A%7B%22string%22%3A%22hl%22%7D%7D%2C%22pattern%22%3A%22%5E%283%7C3%2E%2E%2A%29%24%22%7D%5D%7D%2C%7B%22name%22%3A%22friendconnect%22%2C%22baseSpec%22%3A%7B%22uri%22%3A%22http%3A%2F%2Fwww%2Egoogle%2Ecom%2Ffriendconnect%2Fscript%2Ffriendconnect%2Ejs%22%2C%22ssl%22%3A%22https%3A%2F%2Fwww%2Egoogle%2Ecom%2Ffriendconnect%2Fscript%2Ffriendconnect%2Ejs%22%2C%22key%22%3A%7B%22string%22%3A%22key%22%7D%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Afalse%2C%22params%22%3A%7B%7D%7D%7D%2C%7B%22name%22%3A%22sharing%22%2C%22baseSpec%22%3A%7B%22uri%22%3A%22http%3A%2F%2Fwww%2Egoogle%2Ecom%2Fs2%2Fsharing%2Fjs%22%2C%22ssl%22%3Anull%2C%22key%22%3A%7B%22string%22%3A%22key%22%7D%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Afalse%2C%22params%22%3A%7B%22language%22%3A%7B%22string%22%3A%22hl%22%7D%7D%7D%7D%2C%22ads%22%2C%7B%22name%22%3A%22books%22%2C%22baseSpec%22%3A%7B%22uri%22%3A%22http%3A%2F%2Fbooks%2Egoogle%2Ecom%2Fbooks%2Fapi%2Ejs%22%2C%22ssl%22%3A%22https%3A%2F%2Fencrypted%2Egoogle%2Ecom%2Fbooks%2Fapi%2Ejs%22%2C%22key%22%3A%7B%22string%22%3A%22key%22%7D%2C%22version%22%3A%7B%22string%22%3A%22v%22%7D%2C%22deferred%22%3Atrue%2C%22params%22%3A%7B%22callback%22%3A%7B%22string%22%3A%22callback%22%7D%2C%22language%22%3A%7B%22string%22%3A%22hl%22%7D%7D%7D%7D%2C%22elements%22%2C%22earth%22%2C%22ima%22%5D%7D%29%3B%0Agoogle%2Eloader%2Erfm%28%7B%22%3Asearch%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fsearch%2F1%2E0%2F8bdfc79787aa2b2b1ac464140255872c%2F%22%2C%22js%22%3A%22default%2Ben%2EI%2Ejs%22%2C%22css%22%3A%22default%2Ben%2Ecss%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3ANoOldNames%22%3Afalse%2C%22%3AJSHash%22%3A%228bdfc79787aa2b2b1ac464140255872c%22%7D%7D%2C%22%3Alanguage%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Flanguage%2F1%2E0%2F21ed3320451b9198aa71e398186af717%2F%22%2C%22js%22%3A%22default%2Ben%2EI%2Ejs%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%2221ed3320451b9198aa71e398186af717%22%7D%7D%2C%22%3Aannotations%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fannotations%2F1%2E0%2F3b0f18d6e7bf8cf053640179ef6d98d1%2F%22%2C%22js%22%3A%22default%2Ben%2EI%2Ejs%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%223b0f18d6e7bf8cf053640179ef6d98d1%22%7D%7D%2C%22%3Awave%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fwave%2F1%2E0%2F3b6f7573ff78da6602dda5e09c9025bf%2F%22%2C%22js%22%3A%22default%2EI%2Ejs%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%223b6f7573ff78da6602dda5e09c9025bf%22%7D%7D%2C%22%3Aearth%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fearth%2F1%2E0%2Fdb22e5693e0a8de1f62f3536f5a8d7d3%2F%22%2C%22js%22%3A%22default%2EI%2Ejs%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%22db22e5693e0a8de1f62f3536f5a8d7d3%22%7D%7D%2C%22%3Afeeds%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Ffeeds%2F1%2E0%2F482f2817cdf8982edf2e5669f9e3a627%2F%22%2C%22js%22%3A%22default%2Ben%2EI%2Ejs%22%2C%22css%22%3A%22default%2Ben%2Ecss%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%22482f2817cdf8982edf2e5669f9e3a627%22%7D%7D%2C%22%3Apicker%22%3A%7B%22versions%22%3A%7B%22%3A1%22%3A%221%22%2C%22%3A1%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fpicker%2F1%2E0%2F1c635e91b9d0c082c660a42091913907%2F%22%2C%22js%22%3A%22default%2EI%2Ejs%22%2C%22css%22%3A%22default%2Ecss%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%221%2E0%22%2C%22%3AJSHash%22%3A%221c635e91b9d0c082c660a42091913907%22%7D%7D%2C%22%3Aima%22%3A%7B%22versions%22%3A%7B%22%3A3%22%3A%221%22%2C%22%3A3%2E0%22%3A%221%22%7D%2C%22path%22%3A%22%2Fapi%2Fima%2F3%2E0%2F28a914332232c9a8ac0ae8da68b1006e%2F%22%2C%22js%22%3A%22default%2EI%2Ejs%22%2C%22properties%22%3A%7B%22%3AVersion%22%3A%223%2E0%22%2C%22%3AJSHash%22%3A%2228a914332232c9a8ac0ae8da68b1006e%22%7D%7D%7D%29%3B%0Agoogle%2Eloader%2Erpl%28%7B%22%3Aswfobject%22%3A%7B%22versions%22%3A%7B%22%3A2%2E1%22%3A%7B%22uncompressed%22%3A%22swfobject%5Fsrc%2Ejs%22%2C%22compressed%22%3A%22swfobject%2Ejs%22%7D%2C%22%3A2%2E2%22%3A%7B%22uncompressed%22%3A%22swfobject%5Fsrc%2Ejs%22%2C%22compressed%22%3A%22swfobject%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A2%22%3A%222%2E2%22%7D%7D%2C%22%3Achrome%2Dframe%22%3A%7B%22versions%22%3A%7B%22%3A1%2E0%2E0%22%3A%7B%22uncompressed%22%3A%22CFInstall%2Ejs%22%2C%22compressed%22%3A%22CFInstall%2Emin%2Ejs%22%7D%2C%22%3A1%2E0%2E1%22%3A%7B%22uncompressed%22%3A%22CFInstall%2Ejs%22%2C%22compressed%22%3A%22CFInstall%2Emin%2Ejs%22%7D%2C%22%3A1%2E0%2E2%22%3A%7B%22uncompressed%22%3A%22CFInstall%2Ejs%22%2C%22compressed%22%3A%22CFInstall%2Emin%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E0%2E2%22%2C%22%3A1%2E0%22%3A%221%2E0%2E2%22%7D%7D%2C%22%3Aext%2Dcore%22%3A%7B%22versions%22%3A%7B%22%3A3%2E1%2E0%22%3A%7B%22uncompressed%22%3A%22ext%2Dcore%2Ddebug%2Ejs%22%2C%22compressed%22%3A%22ext%2Dcore%2Ejs%22%7D%2C%22%3A3%2E0%2E0%22%3A%7B%22uncompressed%22%3A%22ext%2Dcore%2Ddebug%2Ejs%22%2C%22compressed%22%3A%22ext%2Dcore%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A3%22%3A%223%2E1%2E0%22%2C%22%3A3%2E0%22%3A%223%2E0%2E0%22%2C%22%3A3%2E1%22%3A%223%2E1%2E0%22%7D%7D%2C%22%3Awebfont%22%3A%7B%22versions%22%3A%7B%22%3A1%2E0%2E12%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E13%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E14%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E15%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E10%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E11%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E27%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E28%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E29%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E23%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E24%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E25%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E26%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E21%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E22%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E3%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E4%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E5%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E6%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E9%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E16%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E17%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E0%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E18%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E1%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E19%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%2C%22%3A1%2E0%2E2%22%3A%7B%22uncompressed%22%3A%22webfont%5Fdebug%2Ejs%22%2C%22compressed%22%3A%22webfont%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E0%2E29%22%2C%22%3A1%2E0%22%3A%221%2E0%2E29%22%7D%7D%2C%22%3Ascriptaculous%22%3A%7B%22versions%22%3A%7B%22%3A1%2E8%2E3%22%3A%7B%22uncompressed%22%3A%22scriptaculous%2Ejs%22%2C%22compressed%22%3A%22scriptaculous%2Ejs%22%7D%2C%22%3A1%2E9%2E0%22%3A%7B%22uncompressed%22%3A%22scriptaculous%2Ejs%22%2C%22compressed%22%3A%22scriptaculous%2Ejs%22%7D%2C%22%3A1%2E8%2E1%22%3A%7B%22uncompressed%22%3A%22scriptaculous%2Ejs%22%2C%22compressed%22%3A%22scriptaculous%2Ejs%22%7D%2C%22%3A1%2E8%2E2%22%3A%7B%22uncompressed%22%3A%22scriptaculous%2Ejs%22%2C%22compressed%22%3A%22scriptaculous%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E9%2E0%22%2C%22%3A1%2E8%22%3A%221%2E8%2E3%22%2C%22%3A1%2E9%22%3A%221%2E9%2E0%22%7D%7D%2C%22%3Amootools%22%3A%7B%22versions%22%3A%7B%22%3A1%2E3%2E0%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E2%2E1%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E1%2E2%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E4%2E0%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E3%2E1%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E2%2E2%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E4%2E1%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E3%2E2%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E2%2E3%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E4%2E2%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E2%2E4%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E2%2E5%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%2C%22%3A1%2E1%2E1%22%3A%7B%22uncompressed%22%3A%22mootools%2Ejs%22%2C%22compressed%22%3A%22mootools%2Dyui%2Dcompressed%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E1%2E2%22%2C%22%3A1%2E1%22%3A%221%2E1%2E2%22%2C%22%3A1%2E2%22%3A%221%2E2%2E5%22%2C%22%3A1%2E3%22%3A%221%2E3%2E2%22%2C%22%3A1%2E4%22%3A%221%2E4%2E2%22%2C%22%3A1%2E11%22%3A%221%2E1%2E1%22%7D%7D%2C%22%3Ajqueryui%22%3A%7B%22versions%22%3A%7B%22%3A1%2E8%2E17%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E16%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E15%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E14%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E4%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E13%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E5%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E12%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E6%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E11%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E7%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E10%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E8%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E9%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E5%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E5%2E3%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E8%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E3%22%3A%7B%22uncompressed%22%3A%22jquery%2Dui%2Ejs%22%2C%22compressed%22%3A%22jquery%2Dui%2Emin%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E8%2E17%22%2C%22%3A1%2E8%2E3%22%3A%221%2E8%2E4%22%2C%22%3A1%2E5%22%3A%221%2E5%2E3%22%2C%22%3A1%2E6%22%3A%221%2E6%2E0%22%2C%22%3A1%2E7%22%3A%221%2E7%2E3%22%2C%22%3A1%2E8%22%3A%221%2E8%2E17%22%7D%7D%2C%22%3Ayui%22%3A%7B%22versions%22%3A%7B%22%3A2%2E8%2E0r4%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%2C%22%3A2%2E9%2E0%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%2C%22%3A2%2E8%2E1%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%2C%22%3A2%2E6%2E0%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%2C%22%3A2%2E7%2E0%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%2C%22%3A3%2E3%2E0%22%3A%7B%22uncompressed%22%3A%22build%2Fyui%2Fyui%2Ejs%22%2C%22compressed%22%3A%22build%2Fyui%2Fyui%2Dmin%2Ejs%22%7D%2C%22%3A2%2E8%2E2r1%22%3A%7B%22uncompressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Ejs%22%2C%22compressed%22%3A%22build%2Fyuiloader%2Fyuiloader%2Dmin%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A2%22%3A%222%2E9%2E0%22%2C%22%3A3%22%3A%223%2E3%2E0%22%2C%22%3A2%2E8%2E2%22%3A%222%2E8%2E2r1%22%2C%22%3A2%2E8%2E0%22%3A%222%2E8%2E0r4%22%2C%22%3A3%2E3%22%3A%223%2E3%2E0%22%2C%22%3A2%2E6%22%3A%222%2E6%2E0%22%2C%22%3A2%2E7%22%3A%222%2E7%2E0%22%2C%22%3A2%2E8%22%3A%222%2E8%2E2r1%22%2C%22%3A2%2E9%22%3A%222%2E9%2E0%22%7D%7D%2C%22%3Aprototype%22%3A%7B%22versions%22%3A%7B%22%3A1%2E6%2E1%2E0%22%3A%7B%22uncompressed%22%3A%22prototype%2Ejs%22%2C%22compressed%22%3A%22prototype%2Ejs%22%7D%2C%22%3A1%2E6%2E0%2E2%22%3A%7B%22uncompressed%22%3A%22prototype%2Ejs%22%2C%22compressed%22%3A%22prototype%2Ejs%22%7D%2C%22%3A1%2E7%2E0%2E0%22%3A%7B%22uncompressed%22%3A%22prototype%2Ejs%22%2C%22compressed%22%3A%22prototype%2Ejs%22%7D%2C%22%3A1%2E6%2E0%2E3%22%3A%7B%22uncompressed%22%3A%22prototype%2Ejs%22%2C%22compressed%22%3A%22prototype%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E7%2E0%2E0%22%2C%22%3A1%2E6%2E0%22%3A%221%2E6%2E0%2E3%22%2C%22%3A1%2E6%2E1%22%3A%221%2E6%2E1%2E0%22%2C%22%3A1%2E7%2E0%22%3A%221%2E7%2E0%2E0%22%2C%22%3A1%2E6%22%3A%221%2E6%2E1%2E0%22%2C%22%3A1%2E7%22%3A%221%2E7%2E0%2E0%22%7D%7D%2C%22%3Ajquery%22%3A%7B%22versions%22%3A%7B%22%3A1%2E3%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E4%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E3%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E5%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E4%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E3%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E2%2E3%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E5%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E4%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E0%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E5%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E4%2E3%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E7%2E1%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E2%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E4%2E4%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E2%2E6%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E3%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%2C%22%3A1%2E6%2E4%22%3A%7B%22uncompressed%22%3A%22jquery%2Ejs%22%2C%22compressed%22%3A%22jquery%2Emin%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E7%2E1%22%2C%22%3A1%2E2%22%3A%221%2E2%2E6%22%2C%22%3A1%2E3%22%3A%221%2E3%2E2%22%2C%22%3A1%2E4%22%3A%221%2E4%2E4%22%2C%22%3A1%2E5%22%3A%221%2E5%2E2%22%2C%22%3A1%2E6%22%3A%221%2E6%2E4%22%2C%22%3A1%2E7%22%3A%221%2E7%2E1%22%7D%7D%2C%22%3Adojo%22%3A%7B%22versions%22%3A%7B%22%3A1%2E3%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E4%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E3%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E5%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E4%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E3%2E2%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E2%2E3%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E6%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E5%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E7%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Ejs%22%7D%2C%22%3A1%2E6%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E4%2E3%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E7%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Ejs%22%7D%2C%22%3A1%2E7%2E2%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Ejs%22%7D%2C%22%3A1%2E2%2E0%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%2C%22%3A1%2E1%2E1%22%3A%7B%22uncompressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%2Euncompressed%2Ejs%22%2C%22compressed%22%3A%22dojo%2Fdojo%2Exd%2Ejs%22%7D%7D%2C%22aliases%22%3A%7B%22%3A1%22%3A%221%2E6%2E1%22%2C%22%3A1%2E1%22%3A%221%2E1%2E1%22%2C%22%3A1%2E2%22%3A%221%2E2%2E3%22%2C%22%3A1%2E3%22%3A%221%2E3%2E2%22%2C%22%3A1%2E4%22%3A%221%2E4%2E3%22%2C%22%3A1%2E5%22%3A%221%2E5%2E1%22%2C%22%3A1%2E6%22%3A%221%2E6%2E1%22%2C%22%3A1%2E7%22%3A%221%2E7%2E2%22%7D%7D%7D%29%3B%0A%7D%0AdisplayChartTableIDe346ea33e%28%29%3B" type="text/javascript"></script>
+<!-- divChart -->
+<div id="TableIDe346ea33e" style="width: 1920; height: 378;">
+
+</div>
+<pre class="r"><code># RegressionData &lt;-
+# ProjectData[,c('property_type','room_type','cancellation_policy','host_response_rate','host_acceptance_rate','host_listings_count','accommodates','bedrooms','neighbourhood_cleansed','price','security_deposit','minimum_nights','number_of_reviews','review_scores_rating','review_scores_accuracy','review_scores_cleanliness','review_scores_checkin','review_scores_communication','review_scores_location','review_scores_value')]
+plot(Subset_num, pch = 16, col = &quot;blue&quot;, main = &quot;Matrix Scatterplo&quot;)</code></pre>
+<p><img src="data:image/png;base64,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" width="672" /></p>
+<pre class="r"><code>property_type = ProjectData[, &quot;property_type&quot;]
+room_type = ProjectData[, &quot;room_type&quot;]
+cancellation_policy = ProjectData[, &quot;cancellation_policy&quot;]
+host_response_rate = ProjectData[, &quot;host_response_rate&quot;]
+host_acceptance_rate = ProjectData[, &quot;host_acceptance_rate&quot;]
+host_listings_count = ProjectData[, &quot;host_listings_count&quot;]
+accommodates = ProjectData[, &quot;accommodates&quot;]
+bedrooms = ProjectData[, &quot;bedrooms&quot;]
+neighbourhood_cleansed = ProjectData[, &quot;neighbourhood_cleansed&quot;]
+price = ProjectData[, &quot;price&quot;]
+security_deposit = ProjectData[, &quot;security_deposit&quot;]
+minimum_nights = ProjectData[, &quot;minimum_nights&quot;]
+number_of_reviews = ProjectData[, &quot;number_of_reviews&quot;]
+review_scores_rating = ProjectData[, &quot;review_scores_rating&quot;]
+review_scores_accuracy = ProjectData[, &quot;review_scores_accuracy&quot;]
+review_scores_cleanliness = ProjectData[, &quot;review_scores_cleanliness&quot;]
+review_scores_checkin = ProjectData[, &quot;review_scores_checkin&quot;]
+review_scores_communication = ProjectData[, &quot;review_scores_communication&quot;]
+review_scores_location = ProjectData[, &quot;review_scores_location&quot;]
+review_scores_value = ProjectData[, &quot;review_scores_value&quot;]
+summary(lm(price ~ factor(property_type) + factor(room_type) + factor(cancellation_policy) + 
+    host_listings_count + accommodates + bedrooms + factor(neighbourhood_cleansed) + 
+    security_deposit + minimum_nights + number_of_reviews + review_scores_rating + 
+    review_scores_accuracy + review_scores_cleanliness + review_scores_checkin + 
+    review_scores_communication + review_scores_location))</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = price ~ factor(property_type) + factor(room_type) + 
+##     factor(cancellation_policy) + host_listings_count + accommodates + 
+##     bedrooms + factor(neighbourhood_cleansed) + security_deposit + 
+##     minimum_nights + number_of_reviews + review_scores_rating + 
+##     review_scores_accuracy + review_scores_cleanliness + review_scores_checkin + 
+##     review_scores_communication + review_scores_location)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -401.80  -29.36   -4.82   20.29 1757.02 
+## 
+## Coefficients:
+##                                                                       Estimate
+## (Intercept)                                                          -58.51468
+## factor(property_type)Bed &amp; Breakfast                                  12.64917
+## factor(property_type)Boat                                             15.53719
+## factor(property_type)Cabin                                            29.87091
+## factor(property_type)Camper/RV                                       -31.57552
+## factor(property_type)Condominium                                      -9.44354
+## factor(property_type)Dorm                                             25.80639
+## factor(property_type)House                                            24.41735
+## factor(property_type)Hut                                               6.20000
+## factor(property_type)Loft                                             -2.92811
+## factor(property_type)Other                                            81.33295
+## factor(property_type)Townhouse                                        26.52387
+## factor(property_type)Villa                                            44.55098
+## factor(room_type)Private room                                        -20.25716
+## factor(room_type)Shared room                                         -73.48457
+## factor(cancellation_policy)moderate                                   -3.65888
+## factor(cancellation_policy)strict                                      1.56041
+## host_listings_count                                                   -0.22379
+## accommodates                                                          17.39269
+## bedrooms                                                              23.32221
+## factor(neighbourhood_cleansed)Bijlmer-Oost                           -18.31517
+## factor(neighbourhood_cleansed)Bos en Lommer                            4.91136
+## factor(neighbourhood_cleansed)Buitenveldert - Zuidas                  -3.97522
+## factor(neighbourhood_cleansed)Centrum-Oost                            44.12843
+## factor(neighbourhood_cleansed)Centrum-West                            53.96520
+## factor(neighbourhood_cleansed)De Aker - Nieuw Sloten                  -7.11378
+## factor(neighbourhood_cleansed)De Baarsjes - Oud-West                  19.59833
+## factor(neighbourhood_cleansed)De Pijp - Rivierenbuurt                 25.09039
+## factor(neighbourhood_cleansed)Gaasperdam - Driemond                  -40.14613
+## factor(neighbourhood_cleansed)Geuzenveld - Slotermeer                -13.89454
+## factor(neighbourhood_cleansed)IJburg - Zeeburgereiland               -23.91808
+## factor(neighbourhood_cleansed)Noord-Oost                             -24.83434
+## factor(neighbourhood_cleansed)Noord-West                             -24.76198
+## factor(neighbourhood_cleansed)Oostelijk Havengebied - Indische Buurt   4.53808
+## factor(neighbourhood_cleansed)Osdorp                                 -25.87555
+## factor(neighbourhood_cleansed)Oud-Noord                              -11.78266
+## factor(neighbourhood_cleansed)Oud-Oost                                10.96319
+## factor(neighbourhood_cleansed)Slotervaart                             -9.86195
+## factor(neighbourhood_cleansed)Watergraafsmeer                         -5.56787
+## factor(neighbourhood_cleansed)Westerpark                              18.24411
+## factor(neighbourhood_cleansed)Zuid                                    33.85006
+## security_deposit                                                       0.04807
+## minimum_nights                                                        -0.29731
+## number_of_reviews                                                     -0.19432
+## review_scores_rating                                                   0.45894
+## review_scores_accuracy                                                 1.86614
+## review_scores_cleanliness                                             -0.19282
+## review_scores_checkin                                                  1.60635
+## review_scores_communication                                           -4.30843
+## review_scores_location                                                 4.78401
+##                                                                      Std. Error
+## (Intercept)                                                            31.65140
+## factor(property_type)Bed &amp; Breakfast                                    7.81082
+## factor(property_type)Boat                                               5.02730
+## factor(property_type)Cabin                                             31.87084
+## factor(property_type)Camper/RV                                         31.85027
+## factor(property_type)Condominium                                       12.94076
+## factor(property_type)Dorm                                              46.19991
+## factor(property_type)House                                              3.54196
+## factor(property_type)Hut                                               63.26262
+## factor(property_type)Loft                                              10.64105
+## factor(property_type)Other                                             18.34835
+## factor(property_type)Townhouse                                         14.60828
+## factor(property_type)Villa                                             22.90117
+## factor(room_type)Private room                                           3.47675
+## factor(room_type)Shared room                                           18.98346
+## factor(cancellation_policy)moderate                                     3.04818
+## factor(cancellation_policy)strict                                       3.03711
+## host_listings_count                                                     0.04735
+## accommodates                                                            0.87418
+## bedrooms                                                                1.58145
+## factor(neighbourhood_cleansed)Bijlmer-Oost                             35.14220
+## factor(neighbourhood_cleansed)Bos en Lommer                            26.21101
+## factor(neighbourhood_cleansed)Buitenveldert - Zuidas                   27.05456
+## factor(neighbourhood_cleansed)Centrum-Oost                             26.07200
+## factor(neighbourhood_cleansed)Centrum-West                             26.03529
+## factor(neighbourhood_cleansed)De Aker - Nieuw Sloten                   29.35104
+## factor(neighbourhood_cleansed)De Baarsjes - Oud-West                   25.98735
+## factor(neighbourhood_cleansed)De Pijp - Rivierenbuurt                  26.04730
+## factor(neighbourhood_cleansed)Gaasperdam - Driemond                    34.30679
+## factor(neighbourhood_cleansed)Geuzenveld - Slotermeer                  29.53503
+## factor(neighbourhood_cleansed)IJburg - Zeeburgereiland                 27.00982
+## factor(neighbourhood_cleansed)Noord-Oost                               30.07923
+## factor(neighbourhood_cleansed)Noord-West                               27.80920
+## factor(neighbourhood_cleansed)Oostelijk Havengebied - Indische Buurt   26.20625
+## factor(neighbourhood_cleansed)Osdorp                                   31.20614
+## factor(neighbourhood_cleansed)Oud-Noord                                26.46166
+## factor(neighbourhood_cleansed)Oud-Oost                                 26.16849
+## factor(neighbourhood_cleansed)Slotervaart                              26.81804
+## factor(neighbourhood_cleansed)Watergraafsmeer                          26.69227
+## factor(neighbourhood_cleansed)Westerpark                               26.07607
+## factor(neighbourhood_cleansed)Zuid                                     26.11693
+## security_deposit                                                        0.00542
+## minimum_nights                                                          0.16894
+## number_of_reviews                                                       0.03566
+## review_scores_rating                                                    0.21714
+## review_scores_accuracy                                                  1.64294
+## review_scores_cleanliness                                               1.40891
+## review_scores_checkin                                                   1.88821
+## review_scores_communication                                             2.09121
+## review_scores_location                                                  1.47042
+##                                                                      t value
+## (Intercept)                                                           -1.849
+## factor(property_type)Bed &amp; Breakfast                                   1.619
+## factor(property_type)Boat                                              3.091
+## factor(property_type)Cabin                                             0.937
+## factor(property_type)Camper/RV                                        -0.991
+## factor(property_type)Condominium                                      -0.730
+## factor(property_type)Dorm                                              0.559
+## factor(property_type)House                                             6.894
+## factor(property_type)Hut                                               0.098
+## factor(property_type)Loft                                             -0.275
+## factor(property_type)Other                                             4.433
+## factor(property_type)Townhouse                                         1.816
+## factor(property_type)Villa                                             1.945
+## factor(room_type)Private room                                         -5.826
+## factor(room_type)Shared room                                          -3.871
+## factor(cancellation_policy)moderate                                   -1.200
+## factor(cancellation_policy)strict                                      0.514
+## host_listings_count                                                   -4.726
+## accommodates                                                          19.896
+## bedrooms                                                              14.747
+## factor(neighbourhood_cleansed)Bijlmer-Oost                            -0.521
+## factor(neighbourhood_cleansed)Bos en Lommer                            0.187
+## factor(neighbourhood_cleansed)Buitenveldert - Zuidas                  -0.147
+## factor(neighbourhood_cleansed)Centrum-Oost                             1.693
+## factor(neighbourhood_cleansed)Centrum-West                             2.073
+## factor(neighbourhood_cleansed)De Aker - Nieuw Sloten                  -0.242
+## factor(neighbourhood_cleansed)De Baarsjes - Oud-West                   0.754
+## factor(neighbourhood_cleansed)De Pijp - Rivierenbuurt                  0.963
+## factor(neighbourhood_cleansed)Gaasperdam - Driemond                   -1.170
+## factor(neighbourhood_cleansed)Geuzenveld - Slotermeer                 -0.470
+## factor(neighbourhood_cleansed)IJburg - Zeeburgereiland                -0.886
+## factor(neighbourhood_cleansed)Noord-Oost                              -0.826
+## factor(neighbourhood_cleansed)Noord-West                              -0.890
+## factor(neighbourhood_cleansed)Oostelijk Havengebied - Indische Buurt   0.173
+## factor(neighbourhood_cleansed)Osdorp                                  -0.829
+## factor(neighbourhood_cleansed)Oud-Noord                               -0.445
+## factor(neighbourhood_cleansed)Oud-Oost                                 0.419
+## factor(neighbourhood_cleansed)Slotervaart                             -0.368
+## factor(neighbourhood_cleansed)Watergraafsmeer                         -0.209
+## factor(neighbourhood_cleansed)Westerpark                               0.700
+## factor(neighbourhood_cleansed)Zuid                                     1.296
+## security_deposit                                                       8.870
+## minimum_nights                                                        -1.760
+## number_of_reviews                                                     -5.450
+## review_scores_rating                                                   2.114
+## review_scores_accuracy                                                 1.136
+## review_scores_cleanliness                                             -0.137
+## review_scores_checkin                                                  0.851
+## review_scores_communication                                           -2.060
+## review_scores_location                                                 3.253
+##                                                                      Pr(&gt;|t|)
+## (Intercept)                                                           0.06456
+## factor(property_type)Bed &amp; Breakfast                                  0.10542
+## factor(property_type)Boat                                             0.00201
+## factor(property_type)Cabin                                            0.34868
+## factor(property_type)Camper/RV                                        0.32156
+## factor(property_type)Condominium                                      0.46558
+## factor(property_type)Dorm                                             0.57648
+## factor(property_type)House                                           6.19e-12
+## factor(property_type)Hut                                              0.92193
+## factor(property_type)Loft                                             0.78320
+## factor(property_type)Other                                           9.53e-06
+## factor(property_type)Townhouse                                        0.06949
+## factor(property_type)Villa                                            0.05179
+## factor(room_type)Private room                                        6.06e-09
+## factor(room_type)Shared room                                          0.00011
+## factor(cancellation_policy)moderate                                   0.23007
+## factor(cancellation_policy)strict                                     0.60743
+## host_listings_count                                                  2.36e-06
+## accommodates                                                          &lt; 2e-16
+## bedrooms                                                              &lt; 2e-16
+## factor(neighbourhood_cleansed)Bijlmer-Oost                            0.60227
+## factor(neighbourhood_cleansed)Bos en Lommer                           0.85137
+## factor(neighbourhood_cleansed)Buitenveldert - Zuidas                  0.88319
+## factor(neighbourhood_cleansed)Centrum-Oost                            0.09061
+## factor(neighbourhood_cleansed)Centrum-West                            0.03825
+## factor(neighbourhood_cleansed)De Aker - Nieuw Sloten                  0.80851
+## factor(neighbourhood_cleansed)De Baarsjes - Oud-West                  0.45080
+## factor(neighbourhood_cleansed)De Pijp - Rivierenbuurt                 0.33547
+## factor(neighbourhood_cleansed)Gaasperdam - Driemond                   0.24198
+## factor(neighbourhood_cleansed)Geuzenveld - Slotermeer                 0.63806
+## factor(neighbourhood_cleansed)IJburg - Zeeburgereiland                0.37592
+## factor(neighbourhood_cleansed)Noord-Oost                              0.40906
+## factor(neighbourhood_cleansed)Noord-West                              0.37329
+## factor(neighbourhood_cleansed)Oostelijk Havengebied - Indische Buurt  0.86253
+## factor(neighbourhood_cleansed)Osdorp                                  0.40705
+## factor(neighbourhood_cleansed)Oud-Noord                               0.65614
+## factor(neighbourhood_cleansed)Oud-Oost                                0.67528
+## factor(neighbourhood_cleansed)Slotervaart                             0.71309
+## factor(neighbourhood_cleansed)Watergraafsmeer                         0.83477
+## factor(neighbourhood_cleansed)Westerpark                              0.48418
+## factor(neighbourhood_cleansed)Zuid                                    0.19501
+## security_deposit                                                      &lt; 2e-16
+## minimum_nights                                                        0.07849
+## number_of_reviews                                                    5.32e-08
+## review_scores_rating                                                  0.03461
+## review_scores_accuracy                                                0.25608
+## review_scores_cleanliness                                             0.89115
+## review_scores_checkin                                                 0.39497
+## review_scores_communication                                           0.03943
+## review_scores_location                                                0.00115
+##                                                                         
+## (Intercept)                                                          .  
+## factor(property_type)Bed &amp; Breakfast                                    
+## factor(property_type)Boat                                            ** 
+## factor(property_type)Cabin                                              
+## factor(property_type)Camper/RV                                          
+## factor(property_type)Condominium                                        
+## factor(property_type)Dorm                                               
+## factor(property_type)House                                           ***
+## factor(property_type)Hut                                                
+## factor(property_type)Loft                                               
+## factor(property_type)Other                                           ***
+## factor(property_type)Townhouse                                       .  
+## factor(property_type)Villa                                           .  
+## factor(room_type)Private room                                        ***
+## factor(room_type)Shared room                                         ***
+## factor(cancellation_policy)moderate                                     
+## factor(cancellation_policy)strict                                       
+## host_listings_count                                                  ***
+## accommodates                                                         ***
+## bedrooms                                                             ***
+## factor(neighbourhood_cleansed)Bijlmer-Oost                              
+## factor(neighbourhood_cleansed)Bos en Lommer                             
+## factor(neighbourhood_cleansed)Buitenveldert - Zuidas                    
+## factor(neighbourhood_cleansed)Centrum-Oost                           .  
+## factor(neighbourhood_cleansed)Centrum-West                           *  
+## factor(neighbourhood_cleansed)De Aker - Nieuw Sloten                    
+## factor(neighbourhood_cleansed)De Baarsjes - Oud-West                    
+## factor(neighbourhood_cleansed)De Pijp - Rivierenbuurt                   
+## factor(neighbourhood_cleansed)Gaasperdam - Driemond                     
+## factor(neighbourhood_cleansed)Geuzenveld - Slotermeer                   
+## factor(neighbourhood_cleansed)IJburg - Zeeburgereiland                  
+## factor(neighbourhood_cleansed)Noord-Oost                                
+## factor(neighbourhood_cleansed)Noord-West                                
+## factor(neighbourhood_cleansed)Oostelijk Havengebied - Indische Buurt    
+## factor(neighbourhood_cleansed)Osdorp                                    
+## factor(neighbourhood_cleansed)Oud-Noord                                 
+## factor(neighbourhood_cleansed)Oud-Oost                                  
+## factor(neighbourhood_cleansed)Slotervaart                               
+## factor(neighbourhood_cleansed)Watergraafsmeer                           
+## factor(neighbourhood_cleansed)Westerpark                                
+## factor(neighbourhood_cleansed)Zuid                                      
+## security_deposit                                                     ***
+## minimum_nights                                                       .  
+## number_of_reviews                                                    ***
+## review_scores_rating                                                 *  
+## review_scores_accuracy                                                  
+## review_scores_cleanliness                                               
+## review_scores_checkin                                                   
+## review_scores_communication                                          *  
+## review_scores_location                                               ** 
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 63 on 4471 degrees of freedom
+##   (6841 observations deleted due to missingness)
+## Multiple R-squared:  0.4721, Adjusted R-squared:  0.4663 
+## F-statistic: 81.61 on 49 and 4471 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 
 
